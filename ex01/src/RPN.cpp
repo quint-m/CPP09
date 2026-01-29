@@ -3,26 +3,7 @@
 #include <stack>
 #include <stdexcept>
 
-RPN::RPN()
-{
-}
-
-RPN::~RPN()
-{
-}
-
-RPN::RPN(const RPN &other)
-{
-    (void)other;
-}
-
-RPN &RPN::operator=(const RPN &other)
-{
-    (void)other;
-    return *this;
-}
-
-int RPN::evaluate(const std::string &expression) const
+int RPN::evaluate(const std::string &expression)
 {
     std::stack<int> stk;
     int result = 0;
@@ -37,15 +18,13 @@ int RPN::evaluate(const std::string &expression) const
         throw std::invalid_argument("Invalid characters in expression");
     }
 
-    for (auto it = expression.begin(); it != expression.end(); ++it)
+    for (char token : expression)
     {
-        char token = *it;
-
-        if (isspace(token))
+        if (isspace(token) != 0)
         {
             continue;
         }
-        if (isdigit(token))
+        if (isdigit(token) != 0)
         {
             stk.push(token - '0');
         }
@@ -70,7 +49,7 @@ int RPN::evaluate(const std::string &expression) const
     return stk.top();
 }
 
-int RPN::performOperation(int left, int right, char opr) const
+int RPN::performOperation(int left, int right, char opr)
 {
     switch (opr)
     {

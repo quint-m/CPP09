@@ -4,13 +4,8 @@
 class RPN
 {
   public:
-    RPN();
-    ~RPN();
-    RPN(const RPN &other);
-    RPN &operator=(const RPN &other);
-
-    [[nodiscard]] int evaluate(const std::string &expression) const;
+    [[nodiscard]] static int evaluate(const std::string &expression);
 
   private:
-    [[nodiscard]] int performOperation(int left, int right, char opr) const;
+    [[nodiscard]] static int performOperation(int left, int right, char opr);
 };
