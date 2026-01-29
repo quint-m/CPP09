@@ -11,7 +11,11 @@ BitcoinExchange::BitcoinExchange()
     loadData("data.csv");
 }
 
-BitcoinExchange::BitcoinExchange(const BitcoinExchange &other) : data(other.data)
+BitcoinExchange::BitcoinExchange(const BitcoinExchange &other) : _data(other._data)
+{
+}
+
+BitcoinExchange::BitcoinExchange(BitcoinExchange &&other) noexcept : _data(std::move(other._data))
 {
 }
 
@@ -23,7 +27,16 @@ BitcoinExchange &BitcoinExchange::operator=(const BitcoinExchange &other)
 {
     if (this != &other)
     {
-        data = other.data;
+        _data = other._data;
+    }
+    return *this;
+}
+
+BitcoinExchange &BitcoinExchange::operator=(BitcoinExchange &&other) noexcept
+{
+    if (this != &other)
+    {
+        _data = std::move(other._data);
     }
     return *this;
 }
@@ -106,7 +119,7 @@ void BitcoinExchange::loadData(const std::string &input)
         {
             std::string date = parseDate(line.substr(0, commaPos));
             double rate = std::stod(line.substr(commaPos + 1));
-            data[date] = rate;
+            _data[date] = rate;
         }
         catch (const std::exception &e)
         {
@@ -117,14 +130,14 @@ void BitcoinExchange::loadData(const std::string &input)
 
 double BitcoinExchange::getRate(const std::string &date) const
 {
-    auto it = data.find(date);
-    if (it != data.end())
+    auto it = _data.find(date);
+    if (it != _data.end())
     {
         return it->second;
     }
 
-    auto lower = data.lower_bound(date);
-    if (lower != data.begin())
+    auto lower = _data.lower_bound(date);
+    if (lower != _data.begin())
     {
         --lower;
         return lower->second;

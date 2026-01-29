@@ -1,25 +1,44 @@
-NAME	=	btc
+NAME		= btc
 
-CC		=	c++
-CFLAGS	=	-Wall -Wextra -Werror -std=c++11
+CXX			= c++
+CXXFLAGS	= -Wall -Wextra -Werror -std=c++11 -MMD -MP
 
-SRCS	=	main.cpp BitcoinExchange.cpp
-OBJS	=	$(SRCS:.cpp=.o)
+SRCDIR		= src
+OBJDIR		= obj
+
+SOURCES		= $(SRCDIR)/main.cpp \
+			  $(SRCDIR)/BitcoinExchange.cpp
+
+OBJECTS		= $(addprefix $(OBJDIR)/, $(notdir $(SOURCES:.cpp=.o)))
+DEPS		= $(OBJECTS:.o=.d)
+
+GREEN		= \033[0;32m
+RED			= \033[0;31m
+YELLOW		= \033[0;33m
+NC			= \033[0m
 
 all: $(NAME)
 
-$(NAME): $(OBJS)
-	$(CC) $(CFLAGS) -o $(NAME) $(OBJS)
+$(NAME): $(OBJECTS)
+	@$(CXX) $(CXXFLAGS) $(OBJECTS) -o $(NAME)
+	@echo "\033[0;92m* $(NAME) program file was created *\033[0m"
 
-$(OBJS): %.o: %.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+	@mkdir -p $(OBJDIR)
+	@printf "* compiling $< *\r"
+	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS)
+	@printf "$(RED)Removing object files...$(NC)\n"
+	@rm -rf $(OBJDIR)
 
 fclean: clean
-	rm -f $(NAME)
+	@printf "$(RED)Removing $(NAME)...$(NC)\n"
+	@rm -f $(NAME)
 
 re: fclean all
 
+# Declare phony targets
 .PHONY: all clean fclean re
+
+-include $(DEPS)
