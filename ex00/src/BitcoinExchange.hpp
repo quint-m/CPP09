@@ -2,6 +2,7 @@
 
 #include <map>
 #include <string>
+
 class BitcoinExchange
 {
   public:
@@ -25,10 +26,8 @@ class BitcoinExchange
     std::map<std::string, double> _data;
 
     void loadData(const std::string &input);
-
     void process(const std::string &line) const;
 
     [[nodiscard]] std::string parseDate(const std::string &date) const;
-
     [[nodiscard]] std::string trim(const std::string &str) const;
 };

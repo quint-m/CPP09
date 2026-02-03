@@ -19,6 +19,10 @@ BitcoinExchange::BitcoinExchange(BitcoinExchange &&other) noexcept : _data(std::
 {
 }
 
+BitcoinExchange::BitcoinExchange(BitcoinExchange &&other) noexcept : data(std::move(other.data))
+{
+}
+
 BitcoinExchange::~BitcoinExchange()
 {
 }
@@ -41,13 +45,23 @@ BitcoinExchange &BitcoinExchange::operator=(BitcoinExchange &&other) noexcept
     return *this;
 }
 
+BitcoinExchange &BitcoinExchange::operator=(BitcoinExchange &&other) noexcept
+{
+    if (this == &other)
+    {
+        return *this;
+    }
+    data = std::move(other.data);
+    return *this;
+}
+
 void BitcoinExchange::processInput(const std::string &input) const
 {
     std::ifstream file(input);
     std::string line;
     if (!file.is_open())
     {
-        throw std::runtime_error("Could not open input file");
+        throw std::runtime_error("Could not open file");
     }
     std::getline(file, line);
     if (line != "date | value")
