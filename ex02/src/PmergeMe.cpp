@@ -98,7 +98,7 @@ template <typename T> void PmergeMe::merge_insertion_sort(T &container, int grou
     // setup main and pend chain.
     std::vector<c_iter> main_chain;                    // basically keeping pointers to the max of
                                                        // each group (main chain a1, b1, a2, ax, ...)
-    std::vector<std::pair<c_iter, c_iter>> pend_chain; // pairs of (B element, paired A element for search bound)
+    std::vector<c_iter> pend_chain; // pairs of (B element, paired A element for search bound)
 
     main_chain.emplace_back(move(container.begin(), group_size - 1));       // insert B1
     main_chain.emplace_back(move(container.begin(), (group_size * 2) - 1)); // insert A1
@@ -109,7 +109,7 @@ template <typename T> void PmergeMe::merge_insertion_sort(T &container, int grou
     {
         auto b_iter = move(container.begin(), (group_size * (i - 1)) - 1);
         auto a_iter = move(container.begin(), (group_size * i) - 1);
-        pend_chain.emplace_back(b_iter, a_iter); // B paired with its A
+        pend_chain.emplace_back(b_iter); // B paired with its A
         main_chain.emplace_back(a_iter);
     }
 
@@ -120,9 +120,13 @@ template <typename T> void PmergeMe::merge_insertion_sort(T &container, int grou
     if (has_odd)
     {
         auto b_iter = move(container.begin(), ((group_size * (n_groups)) - 1));
-        pend_chain.emplace_back(b_iter, main_chain.back()); // Use last A as bound
+        pend_chain.emplace_back(b_iter); // Use last A as bound
     }
 
+    // pend_chain[i] corresponds to b_{i+2} (since b1 is already in main)
+    // Its paired a_{i+2} was originally at main_chain index (i + 2)
+    // After inserting j pend elements, it's at index (i + 2 + j)
+    int inserted = 0;
     int previous_jacobsthal = jacobsthal_nr(1);
     for (int i = 2; !pend_chain.empty(); i++) // we start at Jacobsthal 2 (which is 3, because 1 and 2 are already
                                               // inserted in the main chain)
@@ -130,46 +134,33 @@ template <typename T> void PmergeMe::merge_insertion_sort(T &container, int grou
         int current_jacobsthal = jacobsthal_nr(i);
         int to_insert = current_jacobsthal - previous_jacobsthal;
 
+        // NOLINTBEGIN
         if (to_insert > static_cast<int>(pend_chain.size()))
         {
-            break;
+            to_insert = static_cast<int>(pend_chain.size());
         }
+        // NOLINTEND
 
         for (int j = 0; j < to_insert; j++)
         {
-            auto [pend_val, partner] = pend_chain.back();
+            int pend_idx = static_cast<int>(pend_chain.size()) - 1;
+            int bound_idx = pend_idx + 2 + inserted; // +2 because of b1 and b2 already in main chain
+
+            // binary_insertion_sort<T>(main_chain, pend_chain);
+            c_iter pend_val = pend_chain.back();
             pend_chain.pop_back();
 
-            // Find where the paired A element is in main_chain (search bound)
-            auto bound = std::find(main_chain.begin(), main_chain.end(), partner);
+            bound_idx = std::min(bound_idx, static_cast<int>(main_chain.size() - 1));
+            auto search_end = main_chain.begin() + bound_idx + 1;
             auto insert_pos =
-                std::upper_bound(main_chain.begin(), bound + 1, *pend_val,
+                std::upper_bound(main_chain.begin(), search_end, *pend_val,
                                  [](const int val, c_iter mc_it) { return PmergeMe::compare(&val, mc_it); });
             main_chain.insert(insert_pos, pend_val);
+            inserted++;
         }
         previous_jacobsthal = current_jacobsthal;
     }
-
-    // final insertion for any remaining pend elements
-    while (!pend_chain.empty())
-    {
-        auto [pend_val, partner] = pend_chain.back();
-        pend_chain.pop_back();
-
-        auto bound = std::find(main_chain.begin(), main_chain.end(), partner);
-        auto insert_pos = std::upper_bound(main_chain.begin(), bound + 1, *pend_val,
-                                           [](const int val, c_iter mc_it) { return PmergeMe::compare(&val, mc_it); });
-        main_chain.insert(insert_pos, pend_val);
-    }
-
-    // for (unsigned int i = 0; i < pend_chain.size(); i++)
-    // {
-    //     auto pend_val = move(pend_chain.begin(), i);
-    //     auto insert_pos = std::upper_bound(main_chain.begin(), main_chain.end(), **pend_val,
-    //                                        [](const int val, c_iter mc_it) { return compare(&val, mc_it); });
-    //     main_chain.insert(insert_pos, *pend_val);
-    // }
-
+    
     // move back to original container
     move_back<T>(main_chain, container, group_size);
 }

@@ -1,7 +1,7 @@
 NAME		= PmergeMe
 
 CXX			= c++
-CXXFLAGS	= -Wall -Wextra -Werror -std=c++11 -MMD -MP
+CXXFLAGS	= -Wall -Wextra -Werror -std=c++17 -MMD -MP
 
 SRCDIR		= src
 OBJDIR		= obj

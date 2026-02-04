@@ -90,11 +90,11 @@ int main(int argc, char **argv)
 
         std::cout << "Before: [" << print_container(vec_data).str() << "]\n";
         auto duration_vec = benchmark_vec(vec_data);
-        auto duration_deq = benchmark_deq(deq_data);
+        // auto duration_deq = benchmark_deq(deq_data);
         std::cout << "After: [" << print_container(vec_data).str() << "]\n";
         std::cout << "Number of comparisons: " << PmergeMe::_comparisons << "\n";
         std::cout << "Vector sort time: " << duration_vec.count() << " microseconds\n";
-        std::cout << "Deque sort time: " << duration_deq.count() << " microseconds\n";
+        // std::cout << "Deque sort time: " << duration_deq.count() << " microseconds\n";
     }
     catch (const std::exception &e)
     {
