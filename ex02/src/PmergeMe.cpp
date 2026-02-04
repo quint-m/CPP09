@@ -39,9 +39,10 @@ void PmergeMe::binary_insertion_sort(
     std::vector<typename T::iterator> &main, // NOLINT(bugprone-easily-swappable-parameters)
     std::vector<typename T::iterator> &pend) noexcept
 {
-    auto pend_val = pend.begin();
-    auto insert_pos = std::upper_bound(main.begin(), main.end(), **pend_val,
-                                       [](const int val, typename T::iterator mc_it) { return compare(&val, mc_it); });
+    auto pend_val = pend.end() - 1;
+    auto insert_pos =
+        std::upper_bound(main.begin(), main.end(), **pend_val,
+                         [](const int val, typename T::iterator mc_it) { return PmergeMe::compare(&val, mc_it); });
     main.insert(insert_pos, *pend_val);
     pend.erase(pend_val);
 }
@@ -95,10 +96,9 @@ template <typename T> void PmergeMe::merge_insertion_sort(T &container, int grou
     merge_insertion_sort(container, group_size * 2);
 
     // setup main and pend chain.
-    std::vector<c_iter> main_chain; // basically keeping pointers to the max of
-                                    // each group (main chain a1, b1, a2, ax, ...)
-    std::vector<c_iter> pend_chain; // keeping pointers to the min of each
-                                    // group (pend chain b2, bx, ...)
+    std::vector<c_iter> main_chain;                    // basically keeping pointers to the max of
+                                                       // each group (main chain a1, b1, a2, ax, ...)
+    std::vector<std::pair<c_iter, c_iter>> pend_chain; // pairs of (B element, paired A element for search bound)
 
     main_chain.emplace_back(move(container.begin(), group_size - 1));       // insert B1
     main_chain.emplace_back(move(container.begin(), (group_size * 2) - 1)); // insert A1
@@ -107,17 +107,20 @@ template <typename T> void PmergeMe::merge_insertion_sort(T &container, int grou
     // setup chains
     for (int i = starting_group; i <= n_groups; i += 2)
     {
-        pend_chain.emplace_back(move(container.begin(), (group_size * (i - 1)) - 1));
-        main_chain.emplace_back(move(container.begin(), (group_size * i) - 1));
+        auto b_iter = move(container.begin(), (group_size * (i - 1)) - 1);
+        auto a_iter = move(container.begin(), (group_size * i) - 1);
+        pend_chain.emplace_back(b_iter, a_iter); // B paired with its A
+        main_chain.emplace_back(a_iter);
     }
 
     /**
      * We have an odd number of groups, so the last (full) group only has to go
-     * to the pend chain
+     * to the pend chain. It has no paired A, so use main_chain.back() as bound.
      */
     if (has_odd)
     {
-        pend_chain.emplace_back(move(container.begin(), ((group_size * (n_groups)) - 1)));
+        auto b_iter = move(container.begin(), ((group_size * (n_groups)) - 1));
+        pend_chain.emplace_back(b_iter, main_chain.back()); // Use last A as bound
     }
 
     int previous_jacobsthal = jacobsthal_nr(1);
@@ -134,20 +137,38 @@ template <typename T> void PmergeMe::merge_insertion_sort(T &container, int grou
 
         for (int j = 0; j < to_insert; j++)
         {
-            binary_insertion_sort<T>(main_chain, pend_chain);
+            auto [pend_val, partner] = pend_chain.back();
+            pend_chain.pop_back();
+
+            // Find where the paired A element is in main_chain (search bound)
+            auto bound = std::find(main_chain.begin(), main_chain.end(), partner);
+            auto insert_pos =
+                std::upper_bound(main_chain.begin(), bound + 1, *pend_val,
+                                 [](const int val, c_iter mc_it) { return PmergeMe::compare(&val, mc_it); });
+            main_chain.insert(insert_pos, pend_val);
         }
         previous_jacobsthal = current_jacobsthal;
     }
 
-    // final insertion for any remaining pend elements (just have to do this in
-    // reverse order since we're pointering to the back of the pend chain)
-    for (unsigned int i = 0; i < pend_chain.size(); i++)
+    // final insertion for any remaining pend elements
+    while (!pend_chain.empty())
     {
-        auto pend_val = move(pend_chain.begin(), i);
-        auto insert_pos = std::upper_bound(main_chain.begin(), main_chain.end(), **pend_val,
-                                           [](const int val, c_iter mc_it) { return compare(&val, mc_it); });
-        main_chain.insert(insert_pos, *pend_val);
+        auto [pend_val, partner] = pend_chain.back();
+        pend_chain.pop_back();
+
+        auto bound = std::find(main_chain.begin(), main_chain.end(), partner);
+        auto insert_pos = std::upper_bound(main_chain.begin(), bound + 1, *pend_val,
+                                           [](const int val, c_iter mc_it) { return PmergeMe::compare(&val, mc_it); });
+        main_chain.insert(insert_pos, pend_val);
     }
+
+    // for (unsigned int i = 0; i < pend_chain.size(); i++)
+    // {
+    //     auto pend_val = move(pend_chain.begin(), i);
+    //     auto insert_pos = std::upper_bound(main_chain.begin(), main_chain.end(), **pend_val,
+    //                                        [](const int val, c_iter mc_it) { return compare(&val, mc_it); });
+    //     main_chain.insert(insert_pos, *pend_val);
+    // }
 
     // move back to original container
     move_back<T>(main_chain, container, group_size);
