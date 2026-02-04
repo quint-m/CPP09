@@ -123,9 +123,6 @@ template <typename T> void PmergeMe::merge_insertion_sort(T &container, int grou
         pend_chain.emplace_back(b_iter); // Use last A as bound
     }
 
-    // pend_chain[i] corresponds to b_{i+2} (since b1 is already in main)
-    // Its paired a_{i+2} was originally at main_chain index (i + 2)
-    // After inserting j pend elements, it's at index (i + 2 + j)
     int inserted = 0;
     int previous_jacobsthal = jacobsthal_nr(1);
     for (int i = 2; !pend_chain.empty(); i++) // we start at Jacobsthal 2 (which is 3, because 1 and 2 are already
